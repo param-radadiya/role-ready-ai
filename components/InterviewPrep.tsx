@@ -19,19 +19,19 @@ export const InterviewPrep: React.FC<InterviewPrepProps> = ({ questions }) => {
 
   const getCategoryColor = (cat: string) => {
     switch (cat) {
-      case 'Behavioral': return 'bg-violet-100 text-violet-700 border-violet-200';
-      case 'Technical': return 'bg-blue-100 text-blue-700 border-blue-200';
-      case 'Role-Specific': return 'bg-indigo-100 text-indigo-700 border-indigo-200';
+      case 'Behavioral': return 'bg-blue-100 text-blue-700 border-blue-200';
+      case 'Technical': return 'bg-indigo-100 text-indigo-700 border-indigo-200';
+      case 'Role-Specific': return 'bg-sky-100 text-sky-700 border-sky-200';
       default: return 'bg-slate-100 text-slate-700';
     }
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg shadow-violet-100/50 border border-slate-100 overflow-hidden animate-in fade-in slide-in-from-bottom-8 duration-700 delay-150">
-      <div className="px-8 py-6 border-b border-slate-100 bg-gradient-to-r from-violet-50 to-indigo-50 flex items-center justify-between">
-        <h2 className="text-xl font-bold text-violet-900 flex items-center gap-3">
+    <div className="bg-white rounded-2xl shadow-lg shadow-blue-100/50 border border-slate-100 overflow-hidden animate-in fade-in slide-in-from-bottom-8 duration-700 delay-150">
+      <div className="px-8 py-6 border-b border-slate-100 bg-gradient-to-r from-blue-50 to-indigo-50 flex items-center justify-between">
+        <h2 className="text-xl font-bold text-blue-900 flex items-center gap-3">
           <div className="p-2 bg-white rounded-lg shadow-sm">
-             <MessageSquare className="w-5 h-5 text-violet-600" />
+             <MessageSquare className="w-5 h-5 text-blue-700" />
           </div>
           Interview Questions
         </h2>

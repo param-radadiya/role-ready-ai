@@ -169,7 +169,7 @@ export const InputSection: React.FC<InputSectionProps> = ({
       
       {/* Task Selection */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
-         <h2 className="text-xs font-bold text-violet-600 uppercase tracking-widest mb-4 ml-1">Step 1: Choose your Goal</h2>
+         <h2 className="text-xs font-bold text-blue-700 uppercase tracking-widest mb-4 ml-1">Step 1: Choose your Goal</h2>
          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {tasks.map((task) => (
               <button
@@ -178,17 +178,17 @@ export const InputSection: React.FC<InputSectionProps> = ({
                 className={`
                   relative flex flex-col items-start p-5 rounded-xl border-2 transition-all duration-300 text-left group
                   ${selectedTask === task.id 
-                    ? 'border-violet-600 bg-violet-50/50 ring-1 ring-violet-600/20 shadow-md shadow-violet-100' 
-                    : 'border-slate-100 bg-white hover:border-violet-200 hover:bg-slate-50 hover:shadow-md'}
+                    ? 'border-blue-700 bg-blue-50/50 ring-1 ring-blue-700/20 shadow-md shadow-blue-100' 
+                    : 'border-slate-100 bg-white hover:border-blue-200 hover:bg-slate-50 hover:shadow-md'}
                 `}
               >
                 <div className={`
                   p-2.5 rounded-lg mb-3 transition-colors duration-300
-                  ${selectedTask === task.id ? 'bg-violet-600 text-white shadow-lg shadow-violet-300' : 'bg-slate-100 text-slate-500 group-hover:bg-white group-hover:text-violet-500'}
+                  ${selectedTask === task.id ? 'bg-blue-700 text-white shadow-lg shadow-blue-300' : 'bg-slate-100 text-slate-500 group-hover:bg-white group-hover:text-blue-600'}
                 `}>
                   {task.icon}
                 </div>
-                <span className={`font-bold text-lg mb-1 ${selectedTask === task.id ? 'text-violet-900' : 'text-slate-700'}`}>
+                <span className={`font-bold text-lg mb-1 ${selectedTask === task.id ? 'text-blue-900' : 'text-slate-700'}`}>
                   {task.label}
                 </span>
                 <span className="text-xs text-slate-500 leading-relaxed">{task.desc}</span>
@@ -199,16 +199,16 @@ export const InputSection: React.FC<InputSectionProps> = ({
 
       {/* Input Fields */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
-        <h2 className="text-xs font-bold text-violet-600 uppercase tracking-widest mb-6 ml-1">Step 2: Add Details</h2>
+        <h2 className="text-xs font-bold text-blue-700 uppercase tracking-widest mb-6 ml-1">Step 2: Add Details</h2>
         <div className="flex flex-col md:flex-row gap-8">
           {/* Job Description */}
           <div className="flex-1 flex flex-col group">
-            <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-3 group-focus-within:text-violet-700 transition-colors">
-              <Briefcase className="w-4 h-4 text-violet-500" />
+            <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-3 group-focus-within:text-blue-700 transition-colors">
+              <Briefcase className="w-4 h-4 text-blue-500" />
               Job Description
             </label>
             <textarea
-              className="flex-1 w-full p-5 rounded-xl border border-slate-200 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10 outline-none text-sm transition-all min-h-[280px] resize-none bg-slate-50/50 hover:bg-white focus:bg-white placeholder:text-slate-400"
+              className="flex-1 w-full p-5 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none text-sm transition-all min-h-[280px] resize-none bg-slate-50/50 hover:bg-white focus:bg-white placeholder:text-slate-400"
               placeholder="Paste the full job description here..."
               value={jobDesc}
               onChange={(e) => setJobDesc(e.target.value)}
@@ -218,7 +218,7 @@ export const InputSection: React.FC<InputSectionProps> = ({
           {/* Resume */}
           <div className="flex-1 flex flex-col group">
             <div className="flex items-center justify-between mb-3">
-              <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 group-focus-within:text-violet-700 transition-colors">
+              <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 group-focus-within:text-blue-700 transition-colors">
                 <FileText className="w-4 h-4 text-emerald-500" />
                 Your Resume
               </label>
@@ -228,7 +228,7 @@ export const InputSection: React.FC<InputSectionProps> = ({
                 className={`text-xs flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all ${
                   isFileProcessing 
                     ? 'bg-slate-100 text-slate-400 cursor-wait' 
-                    : 'bg-violet-50 text-violet-700 hover:bg-violet-100 hover:text-violet-800'
+                    : 'bg-blue-50 text-blue-700 hover:bg-blue-100 hover:text-blue-800'
                 }`}
               >
                 {isFileProcessing ? (
@@ -256,7 +256,7 @@ export const InputSection: React.FC<InputSectionProps> = ({
                 className={`flex-1 w-full p-5 rounded-xl border focus:ring-4 outline-none text-sm transition-all min-h-[280px] resize-none placeholder:text-slate-400 ${
                   fileError 
                     ? 'border-red-300 bg-red-50 focus:ring-red-100' 
-                    : 'border-slate-200 bg-slate-50/50 hover:bg-white focus:bg-white focus:border-violet-500 focus:ring-violet-500/10'
+                    : 'border-slate-200 bg-slate-50/50 hover:bg-white focus:bg-white focus:border-blue-500 focus:ring-blue-500/10'
                 }`}
                 placeholder="Paste your resume text here or upload a file..."
                 value={resume}
@@ -281,7 +281,7 @@ export const InputSection: React.FC<InputSectionProps> = ({
               flex items-center justify-center gap-3 text-base
               ${isButtonDisabled 
                 ? 'bg-slate-300 cursor-not-allowed shadow-none' 
-                : 'bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 hover:scale-[1.02] active:scale-[0.98] shadow-violet-200'}
+                : 'bg-blue-700 hover:bg-blue-800 hover:scale-[1.02] active:scale-[0.98] shadow-blue-200'}
             `}
           >
             {isAnalyzing ? (

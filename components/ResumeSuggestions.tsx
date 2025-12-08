@@ -65,17 +65,17 @@ export const ResumeSuggestions: React.FC<ResumeSuggestionsProps> = ({ summary, i
       
       {/* Tailored Summary Section */}
       {summary && (
-        <div className="bg-white rounded-2xl shadow-lg shadow-violet-100/50 border border-slate-100 overflow-hidden">
-          <div className="bg-gradient-to-r from-violet-50 to-indigo-50 border-b border-violet-100 px-8 py-5 flex items-center justify-between">
-            <h2 className="text-lg font-bold text-violet-900 flex items-center gap-2.5">
+        <div className="bg-white rounded-2xl shadow-lg shadow-blue-100/50 border border-slate-100 overflow-hidden">
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-100 px-8 py-5 flex items-center justify-between">
+            <h2 className="text-lg font-bold text-blue-900 flex items-center gap-2.5">
               <div className="p-1.5 bg-white rounded-lg shadow-sm">
-                <Sparkles className="w-5 h-5 text-violet-600" />
+                <Sparkles className="w-5 h-5 text-blue-700" />
               </div>
               Tailored Resume Summary
             </h2>
             <button 
               onClick={() => copyToClipboard(summary)}
-              className="group flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold text-violet-700 hover:bg-white hover:shadow-sm transition-all"
+              className="group flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold text-blue-700 hover:bg-white hover:shadow-sm transition-all"
             >
               <Copy className="w-4 h-4 group-hover:scale-110 transition-transform" /> Copy
             </button>
@@ -88,7 +88,7 @@ export const ResumeSuggestions: React.FC<ResumeSuggestionsProps> = ({ summary, i
 
       {/* ATS Score & Improvements Section */}
       {atsScore !== undefined && (
-        <div className="bg-white rounded-2xl shadow-lg shadow-violet-100/50 border border-slate-100 overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-lg shadow-blue-100/50 border border-slate-100 overflow-hidden">
            <div className="px-8 py-8 border-b border-slate-50 flex flex-col md:flex-row items-center gap-10">
               <div className="flex-shrink-0 scale-110 transform origin-center">
                  <ScoreGauge score={atsScore} />
@@ -101,7 +101,7 @@ export const ResumeSuggestions: React.FC<ResumeSuggestionsProps> = ({ summary, i
                  {improvements && improvements.length > 0 && !showImprovements && (
                     <button
                       onClick={() => setShowImprovements(true)}
-                      className="inline-flex items-center gap-2 px-6 py-3 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-bold text-sm transition-all shadow-lg shadow-violet-200 hover:shadow-violet-300 transform hover:-translate-y-0.5"
+                      className="inline-flex items-center gap-2 px-6 py-3 bg-blue-700 hover:bg-blue-800 text-white rounded-xl font-bold text-sm transition-all shadow-lg shadow-blue-200 hover:shadow-blue-300 transform hover:-translate-y-0.5"
                     >
                       <Sparkles className="w-4 h-4" />
                       View Enhancements
@@ -115,12 +115,12 @@ export const ResumeSuggestions: React.FC<ResumeSuggestionsProps> = ({ summary, i
              <div className="animate-in slide-in-from-top-4 fade-in duration-500 bg-slate-50/50">
                <div className="px-8 py-4 border-b border-slate-100 flex items-center justify-between bg-white sticky top-0 z-10">
                   <h3 className="font-bold text-slate-700 flex items-center gap-2">
-                    <Target className="w-5 h-5 text-violet-600" />
+                    <Target className="w-5 h-5 text-blue-700" />
                     Recommended Improvements
                   </h3>
                   <button 
                     onClick={() => setShowImprovements(false)}
-                    className="text-xs font-semibold text-slate-500 hover:text-violet-600 flex items-center gap-1 uppercase tracking-wide px-3 py-1 rounded-full hover:bg-slate-100 transition-colors"
+                    className="text-xs font-semibold text-slate-500 hover:text-blue-700 flex items-center gap-1 uppercase tracking-wide px-3 py-1 rounded-full hover:bg-slate-100 transition-colors"
                   >
                     Close <ChevronUp className="w-3 h-3" />
                   </button>
