@@ -1,16 +1,16 @@
-
 import React from 'react';
 import { JobApplication, ApplicationStatus } from '../types';
-import { Plus, Briefcase, MapPin, Calendar, ExternalLink, Trash2 } from 'lucide-react';
+import { Plus, Briefcase, MapPin, Calendar, ExternalLink, Trash2, Loader2 } from 'lucide-react';
 
 interface DashboardProps {
   applications: JobApplication[];
   onSelectApp: (id: string) => void;
   onNewApp: () => void;
   onDeleteApp: (e: React.MouseEvent, id: string) => void;
+  isLoading?: boolean;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ applications, onSelectApp, onNewApp, onDeleteApp }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ applications, onSelectApp, onNewApp, onDeleteApp, isLoading }) => {
   
   const getStatusColor = (status: ApplicationStatus) => {
     switch (status) {
@@ -22,6 +22,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ applications, onSelectApp,
       default: return 'bg-slate-100 text-slate-700 border-slate-200';
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center p-12">
+        <Loader2 className="w-8 h-8 text-[#006A71] animate-spin mb-4" />
+        <p className="text-slate-500">Syncing your applications...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-8 max-w-7xl mx-auto w-full">

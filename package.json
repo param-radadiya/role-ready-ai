@@ -1,5 +1,5 @@
 {
-  "name": "rolereadyai",
+  "name": "jobiq",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -14,7 +14,8 @@
     "react": "^19.2.1",
     "lucide-react": "^0.556.0",
     "mammoth": "1.8.0",
-    "pdfjs-dist": "3.11.174"
+    "pdfjs-dist": "3.11.174",
+    "firebase": "^12.6.0"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

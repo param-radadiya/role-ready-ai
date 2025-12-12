@@ -1,36 +1,48 @@
-
 import React, { useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Dashboard } from './components/Dashboard';
 import { ApplicationDetail } from './components/ApplicationDetail';
-import { JobApplication, ApplicationStatus } from './types';
+import { JobApplication } from './types';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthPage } from './components/AuthPage';
+import { firestoreService } from './services/firestoreService';
+import { Loader2 } from 'lucide-react';
 
-const STORAGE_KEY = 'roleready_applications_v1';
-
-const App: React.FC = () => {
+const AppContent: React.FC = () => {
+  const { user, loading, logout } = useAuth();
   const [applications, setApplications] = useState<JobApplication[]>([]);
   const [currentAppId, setCurrentAppId] = useState<string | null>(null);
+  const [isLoadingData, setIsLoadingData] = useState(false);
 
-  // Load from LocalStorage
-  useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        setApplications(JSON.parse(saved));
-      } catch (e) {
-        console.error("Failed to load applications", e);
-      }
+  // Load Data
+  const loadApplications = async () => {
+    if (!user) {
+      setApplications([]);
+      return;
     }
-  }, []);
+    setIsLoadingData(true);
+    try {
+      const apps = await firestoreService.getApplications(user.uid);
+      // Sort locally by date desc
+      apps.sort((a, b) => b.createdAt - a.createdAt);
+      setApplications([...apps]);
+    } catch (e) {
+      console.error("Error loading apps:", e);
+    } finally {
+      setIsLoadingData(false);
+    }
+  };
 
-  // Save to LocalStorage
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(applications));
-  }, [applications]);
+    loadApplications();
+  }, [user]);
 
-  const handleNewApp = () => {
+  const handleNewApp = async () => {
+    if (!user) return;
+    
+    const id = Date.now().toString();
     const newApp: JobApplication = {
-      id: Date.now().toString(),
+      id: id,
       company: '',
       role: '',
       location: '',
@@ -45,18 +57,57 @@ const App: React.FC = () => {
       savedInterviewQuestions: [],
       createdAt: Date.now(),
     };
-    setApplications([newApp, ...applications]);
-    setCurrentAppId(newApp.id);
+
+    try {
+      await firestoreService.saveApplication(user.uid, newApp);
+      // Refresh local state
+      setApplications(prev => [newApp, ...prev]);
+      setCurrentAppId(newApp.id);
+    } catch (e) {
+      console.error("Error creating app:", e);
+      alert("Failed to create application");
+    }
   };
 
-  const handleUpdateApp = (updatedApp: JobApplication) => {
+  const handleUpdateApp = async (updatedApp: JobApplication) => {
+    if (!user) return;
+    
+    // Optimistic update
     setApplications(apps => apps.map(app => app.id === updatedApp.id ? updatedApp : app));
+
+    try {
+      await firestoreService.saveApplication(user.uid, updatedApp);
+    } catch (e) {
+      console.error("Error updating app:", e);
+      // Revert if needed
+    }
   };
 
-  const handleDeleteApp = (id: string) => {
-    setApplications(apps => apps.filter(app => app.id !== id));
+  const handleDeleteApp = async (id: string) => {
+    if (!user) return;
     if (currentAppId === id) setCurrentAppId(null);
+
+    try {
+      await firestoreService.deleteApplication(user.uid, id);
+      setApplications(apps => apps.filter(app => app.id !== id));
+    } catch (e) {
+      console.error("Error deleting app:", e);
+      alert("Failed to delete application");
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="h-screen w-full flex flex-col items-center justify-center bg-[#F0F9FA]">
+        <Loader2 className="w-10 h-10 text-[#006A71] animate-spin mb-4" />
+        <p className="text-slate-500 font-medium animate-pulse">Loading JobIQ...</p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <AuthPage />;
+  }
 
   const currentApp = applications.find(a => a.id === currentAppId);
 
@@ -69,13 +120,14 @@ const App: React.FC = () => {
         currentAppId={currentAppId}
         onSelectApp={setCurrentAppId}
         onNewApp={handleNewApp}
+        onLogout={logout}
       />
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col h-full overflow-hidden relative w-full">
-        {/* Mobile Header (Only visible on small screens - simplified for now) */}
+        {/* Mobile Header */}
         <div className="md:hidden bg-white border-b border-slate-200 p-4 flex items-center justify-between sticky top-0 z-40">
-           <span className="font-bold text-[#006A71]">RoleReadyAI</span>
+           <span className="font-bold text-[#006A71]">JobIQ</span>
            <button onClick={() => setCurrentAppId(null)} className="text-xs font-bold text-[#006A71]">Dashboard</button>
         </div>
 
@@ -96,17 +148,29 @@ const App: React.FC = () => {
                   e.stopPropagation();
                   if(window.confirm("Delete this application?")) handleDeleteApp(id);
                }}
+               isLoading={isLoadingData}
              />
              
-             {/* Simple Footer for Dashboard view */}
-             <footer className="py-8 text-center text-slate-400 text-xs">
-                &copy; 2025 RoleReadyAI. Powered by Google Gemini.
+             <footer className="py-8 text-center">
+                <p className="text-xs text-slate-400 font-medium mb-1">
+                  &copy; 2025 JobIQ. Powered by Google Gemini.
+                </p>
+                <p className="text-xs text-slate-400 font-medium">
+                  Build by <a href="https://www.linkedin.com/in/param-radadiya-77a4b51a6/" target="_blank" rel="noopener noreferrer" className="text-[#006A71] hover:underline font-bold">Param Radadiya</a>
+                </p>
              </footer>
           </div>
         )}
       </main>
-
     </div>
+  );
+};
+
+const App: React.FC = () => {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 };
 

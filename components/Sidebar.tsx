@@ -1,21 +1,25 @@
-
 import React from 'react';
-import { LayoutDashboard, Plus, Building2, ChevronRight, Briefcase } from 'lucide-react';
+import { LayoutDashboard, Plus, Building2, ChevronRight, LogOut, User } from 'lucide-react';
 import { JobApplication } from '../types';
+import { useAuth } from '../context/AuthContext';
 
 interface SidebarProps {
   applications: JobApplication[];
   currentAppId: string | null;
   onSelectApp: (id: string | null) => void;
   onNewApp: () => void;
+  onLogout: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ 
   applications, 
   currentAppId, 
   onSelectApp,
-  onNewApp 
+  onNewApp,
+  onLogout
 }) => {
+  const { user } = useAuth();
+
   return (
     <div className="w-72 bg-white border-r border-slate-200 h-screen flex flex-col sticky top-0 left-0 flex-shrink-0 z-30 hidden md:flex">
       {/* Header */}
@@ -23,14 +27,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="flex items-center gap-2 cursor-pointer" onClick={() => onSelectApp(null)}>
            <img 
               src="logo.png" 
-              alt="RoleReadyAI" 
+              alt="JobIQ" 
               className="h-8 w-auto object-contain" 
               onError={(e) => {
                 e.currentTarget.style.display = 'none';
                 e.currentTarget.nextElementSibling?.classList.remove('hidden');
               }}
             />
-            <span className="hidden text-xl font-bold text-[#006A71] tracking-tight" id="sidebar-logo-text">RoleReadyAI</span>
+            <span className="hidden text-xl font-bold text-[#006A71] tracking-tight" id="sidebar-logo-text">JobIQ</span>
         </div>
         
         <button
@@ -105,13 +109,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Footer Profile */}
       <div className="p-4 border-t border-slate-200 bg-slate-50/50">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-[#E0F2F1] flex items-center justify-center text-[#006A71] font-bold text-xs border border-[#B2DFDB]">
-            ME
+          <div className="w-8 h-8 rounded-full bg-[#E0F2F1] flex items-center justify-center text-[#006A71] font-bold text-xs border border-[#B2DFDB] overflow-hidden">
+             {user?.photoURL ? (
+               <img src={user.photoURL} alt="User" className="w-full h-full object-cover" />
+             ) : (
+               <div className="w-full h-full flex items-center justify-center">
+                  {user?.displayName ? user.displayName.charAt(0).toUpperCase() : <User className="w-4 h-4"/>}
+               </div>
+             )}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-sm font-bold text-slate-700">My Profile</div>
-            <div className="text-xs text-slate-500 truncate">Job Seeker</div>
+            <div className="text-sm font-bold text-slate-700 truncate">{user?.displayName || 'User'}</div>
+            <div className="text-xs text-slate-500 truncate">{user?.email || ''}</div>
           </div>
+          <button 
+            onClick={onLogout}
+            className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            title="Sign Out"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
       </div>
     </div>
