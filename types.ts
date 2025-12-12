@@ -1,3 +1,4 @@
+
 export type TaskType = 'summary' | 'bullets' | 'interview';
 
 export interface BulletImprovement {
@@ -22,11 +23,32 @@ export interface AnalysisResult {
   atsScoreSummary?: string;
 }
 
-export interface AppState {
+export type ApplicationStatus = 'Wishlist' | 'Applied' | 'Interviewing' | 'Offer' | 'Rejected' | 'Accepted';
+
+export interface RecruiterInfo {
+  name: string;
+  designation: string;
+  email: string;
+  linkedin: string;
+  phone: string;
+}
+
+export interface JobApplication {
+  id: string;
+  company: string;
+  role: string;
+  location: string;
+  dateApplied: string;
+  jobLink: string;
+  ctc: string;
+  status: ApplicationStatus;
   jobDescription: string;
-  resumeText: string;
-  isAnalyzing: boolean;
-  result: AnalysisResult | null;
-  error: string | null;
-  selectedTask: TaskType;
+  resumeText: string; // The tailored resume for this job
+  recruiter: RecruiterInfo;
+  
+  // Persisted AI Results
+  aiResult: AnalysisResult | null;
+  savedInterviewQuestions: InterviewQuestion[];
+  
+  createdAt: number;
 }
