@@ -1,7 +1,6 @@
-
 import React, { useState, useRef } from 'react';
 import { JobApplication, ApplicationStatus, AnalysisResult, InterviewQuestion } from '../types';
-import { MapPin, Calendar, Link as LinkIcon, DollarSign, User, FileText, Briefcase, ChevronLeft, Upload, Loader2, Save, Sparkles, Trash2, Mail, Linkedin, Phone } from 'lucide-react';
+import { MapPin, Calendar, Link as LinkIcon, DollarSign, User, FileText, Briefcase, ChevronLeft, Upload, Loader2, Save, Sparkles, Trash2, Mail, Linkedin, Phone, StickyNote } from 'lucide-react';
 import { AITools } from './AITools';
 import * as pdfjsLib from 'pdfjs-dist';
 import * as mammoth from 'mammoth';
@@ -303,6 +302,20 @@ export const ApplicationDetail: React.FC<ApplicationDetailProps> = ({ applicatio
                      </div>
                   </div>
                 </div>
+              </div>
+
+               {/* Private Remarks / Notes Section */}
+               <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm group focus-within:ring-2 focus-within:ring-[#006A71]/20">
+                <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-3">
+                   <StickyNote className="w-4 h-4 text-amber-500" />
+                   Private Remarks & Notes
+                </label>
+                <textarea
+                  className="w-full p-4 rounded-xl border border-slate-200 bg-amber-50/30 focus:bg-white focus:border-[#006A71] outline-none text-sm min-h-[120px] resize-y placeholder:text-slate-400 transition-colors"
+                  placeholder="Add your notes here... (e.g. Referral details, interview experience, company impressions)"
+                  value={application.remarks || ''}
+                  onChange={(e) => handleFieldChange('remarks', e.target.value)}
+                />
               </div>
 
               {/* Job Description & Resume */}

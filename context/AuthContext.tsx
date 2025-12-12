@@ -6,6 +6,7 @@ interface AuthContextType {
   user: FirebaseUser | null;
   loading: boolean;
   loginWithGoogle: () => Promise<void>;
+  loginAsGuest: () => void;
   logout: () => Promise<void>;
 }
 
@@ -13,6 +14,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
   loginWithGoogle: async () => {},
+  loginAsGuest: () => {},
   logout: async () => {},
 });
 
@@ -24,7 +26,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
+      if (currentUser) {
+        setUser(currentUser);
+        localStorage.removeItem('isGuest'); // Clear guest flag if real login
+      } else {
+         // Check if we were in guest mode
+         if (localStorage.getItem('isGuest') === 'true') {
+             // Create a mock user object that satisfies the FirebaseUser type requirements for our app
+             const guestUser = {
+                uid: 'guest-user',
+                displayName: 'Guest User',
+                email: 'guest@jobiq.app',
+                emailVerified: true,
+                isAnonymous: true,
+                phoneNumber: null,
+                photoURL: null,
+                providerId: 'guest',
+                tenantId: null,
+                metadata: {},
+                providerData: [],
+                refreshToken: '',
+                delete: async () => {},
+                getIdToken: async () => '',
+                getIdTokenResult: async () => ({} as any),
+                reload: async () => {},
+                toJSON: () => ({}),
+             } as unknown as FirebaseUser;
+             setUser(guestUser);
+         } else {
+             setUser(null);
+         }
+      }
       setLoading(false);
     });
     return () => unsubscribe();
@@ -39,8 +71,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const loginAsGuest = () => {
+    const guestUser = {
+        uid: 'guest-user',
+        displayName: 'Guest User',
+        email: 'guest@jobiq.app',
+        emailVerified: true,
+        isAnonymous: true,
+        photoURL: null,
+        // Mock properties to satisfy TS
+        metadata: {},
+        providerData: [],
+     } as unknown as FirebaseUser;
+     
+     localStorage.setItem('isGuest', 'true');
+     setUser(guestUser);
+  };
+
   const logout = async () => {
     try {
+      localStorage.removeItem('isGuest');
+      if (user?.uid === 'guest-user') {
+          setUser(null);
+          return;
+      }
       await signOut(auth);
     } catch (error) {
       console.error("Logout failed", error);
@@ -48,7 +102,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, loginWithGoogle, logout }}>
+    <AuthContext.Provider value={{ user, loading, loginWithGoogle, loginAsGuest, logout }}>
       {children}
     </AuthContext.Provider>
   );

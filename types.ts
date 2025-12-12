@@ -45,6 +45,7 @@ export interface JobApplication {
   jobDescription: string;
   resumeText: string; // The tailored resume for this job
   recruiter: RecruiterInfo;
+  remarks?: string; // Personal notes/remarks
   
   // Persisted AI Results
   aiResult: AnalysisResult | null;

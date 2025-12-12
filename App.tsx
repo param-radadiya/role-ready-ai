@@ -20,6 +20,22 @@ const AppContent: React.FC = () => {
       setApplications([]);
       return;
     }
+
+    // GUEST MODE: Load from local storage
+    if (user.uid === 'guest-user') {
+        const saved = localStorage.getItem('guest_applications');
+        if (saved) {
+            try {
+                setApplications(JSON.parse(saved));
+            } catch (e) {
+                setApplications([]);
+            }
+        } else {
+            setApplications([]);
+        }
+        return;
+    }
+
     setIsLoadingData(true);
     try {
       const apps = await firestoreService.getApplications(user.uid);
@@ -37,6 +53,11 @@ const AppContent: React.FC = () => {
     loadApplications();
   }, [user]);
 
+  // Helper to save guest data
+  const saveGuestData = (apps: JobApplication[]) => {
+      localStorage.setItem('guest_applications', JSON.stringify(apps));
+  };
+
   const handleNewApp = async () => {
     if (!user) return;
     
@@ -53,19 +74,28 @@ const AppContent: React.FC = () => {
       jobDescription: '',
       resumeText: '',
       recruiter: { name: '', designation: '', email: '', linkedin: '', phone: '' },
+      remarks: '',
       aiResult: null,
       savedInterviewQuestions: [],
       createdAt: Date.now(),
     };
 
+    // Optimistic Update
+    const updatedApps = [newApp, ...applications];
+    setApplications(updatedApps);
+    setCurrentAppId(newApp.id);
+
+    // GUEST MODE
+    if (user.uid === 'guest-user') {
+        saveGuestData(updatedApps);
+        return;
+    }
+
     try {
       await firestoreService.saveApplication(user.uid, newApp);
-      // Refresh local state
-      setApplications(prev => [newApp, ...prev]);
-      setCurrentAppId(newApp.id);
     } catch (e) {
       console.error("Error creating app:", e);
-      alert("Failed to create application");
+      alert("Failed to create application on server");
     }
   };
 
@@ -73,7 +103,14 @@ const AppContent: React.FC = () => {
     if (!user) return;
     
     // Optimistic update
-    setApplications(apps => apps.map(app => app.id === updatedApp.id ? updatedApp : app));
+    const updatedApps = applications.map(app => app.id === updatedApp.id ? updatedApp : app);
+    setApplications(updatedApps);
+
+    // GUEST MODE
+    if (user.uid === 'guest-user') {
+        saveGuestData(updatedApps);
+        return;
+    }
 
     try {
       await firestoreService.saveApplication(user.uid, updatedApp);
@@ -87,12 +124,21 @@ const AppContent: React.FC = () => {
     if (!user) return;
     if (currentAppId === id) setCurrentAppId(null);
 
+    // Optimistic delete
+    const updatedApps = applications.filter(app => app.id !== id);
+    setApplications(updatedApps);
+
+    // GUEST MODE
+    if (user.uid === 'guest-user') {
+        saveGuestData(updatedApps);
+        return;
+    }
+
     try {
       await firestoreService.deleteApplication(user.uid, id);
-      setApplications(apps => apps.filter(app => app.id !== id));
     } catch (e) {
       console.error("Error deleting app:", e);
-      alert("Failed to delete application");
+      alert("Failed to delete application on server");
     }
   };
 
@@ -158,6 +204,9 @@ const AppContent: React.FC = () => {
                 <p className="text-xs text-slate-400 font-medium">
                   Build by <a href="https://www.linkedin.com/in/param-radadiya-77a4b51a6/" target="_blank" rel="noopener noreferrer" className="text-[#006A71] hover:underline font-bold">Param Radadiya</a>
                 </p>
+                {user.uid === 'guest-user' && (
+                    <p className="text-[10px] text-amber-500 mt-2 font-bold uppercase tracking-wider bg-amber-50 inline-block px-2 py-1 rounded">Guest Mode Active</p>
+                )}
              </footer>
           </div>
         )}

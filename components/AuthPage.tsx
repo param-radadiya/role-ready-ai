@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Loader2, AlertCircle, Copy, Check, Info } from 'lucide-react';
+import { Loader2, AlertCircle, Copy, Check, Info, User, ArrowRight } from 'lucide-react';
 
 export const AuthPage: React.FC = () => {
-  const { loginWithGoogle } = useAuth();
+  const { loginWithGoogle, loginAsGuest } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -123,6 +123,27 @@ export const AuthPage: React.FC = () => {
             )}
             <span className="group-hover:text-slate-900 transition-colors">Sign in with Google</span>
           </button>
+
+          {/* Development / Guest Mode */}
+          <div className="w-full mt-6">
+             <div className="relative flex py-2 items-center">
+                <div className="flex-grow border-t border-slate-100"></div>
+                <span className="flex-shrink-0 mx-4 text-slate-400 text-[10px] uppercase font-bold tracking-wider">Internal Preview</span>
+                <div className="flex-grow border-t border-slate-100"></div>
+             </div>
+             
+             <button
+               onClick={loginAsGuest}
+               className="w-full bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-700 font-bold py-3 px-6 rounded-xl border border-dashed border-slate-200 transition-all flex items-center justify-center gap-2 group"
+             >
+                <User className="w-4 h-4" />
+                <span>Use as Guest</span>
+                <ArrowRight className="w-3 h-3 opacity-0 -ml-2 group-hover:opacity-100 group-hover:ml-0 transition-all" />
+             </button>
+             <p className="text-center text-[10px] text-slate-300 mt-2">
+               Access app features without database storage
+             </p>
+          </div>
         </div>
       </div>
       

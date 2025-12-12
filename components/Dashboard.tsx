@@ -1,6 +1,7 @@
 import React from 'react';
 import { JobApplication, ApplicationStatus } from '../types';
-import { Plus, Briefcase, MapPin, Calendar, ExternalLink, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Briefcase, MapPin, Calendar, ExternalLink, Trash2, Loader2, Download } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 interface DashboardProps {
   applications: JobApplication[];
@@ -11,6 +12,7 @@ interface DashboardProps {
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ applications, onSelectApp, onNewApp, onDeleteApp, isLoading }) => {
+  const { user } = useAuth();
   
   const getStatusColor = (status: ApplicationStatus) => {
     switch (status) {
@@ -21,6 +23,73 @@ export const Dashboard: React.FC<DashboardProps> = ({ applications, onSelectApp,
       case 'Accepted': return 'bg-violet-100 text-violet-700 border-violet-200';
       default: return 'bg-slate-100 text-slate-700 border-slate-200';
     }
+  };
+
+  const getWelcomeName = () => {
+    if (!user) return 'User';
+    if (user.uid === 'guest-user') return 'Guest';
+    // Return first name or display name
+    return user.displayName?.split(' ')[0] || user.displayName || 'User';
+  };
+
+  const handleExport = () => {
+    // Define CSV Headers
+    const headers = [
+      "Application ID",
+      "Company",
+      "Role",
+      "Status",
+      "Date Applied",
+      "Location",
+      "CTC",
+      "Job Link",
+      "Recruiter Name",
+      "Recruiter Title",
+      "Recruiter Email",
+      "Recruiter LinkedIn",
+      "Recruiter Phone",
+      "Remarks"
+    ];
+
+    // Map Data to CSV Rows
+    const rows = applications.map(app => [
+      app.id,
+      app.company || '',
+      app.role || '',
+      app.status,
+      app.dateApplied,
+      app.location || '',
+      app.ctc || '',
+      app.jobLink || '',
+      app.recruiter?.name || '',
+      app.recruiter?.designation || '',
+      app.recruiter?.email || '',
+      app.recruiter?.linkedin || '',
+      app.recruiter?.phone || '',
+      app.remarks || '' // Ensure remarks are included
+    ]);
+
+    // Construct CSV String
+    const csvContent = [
+      headers.join(','), // Header Row
+      ...rows.map(row => 
+        row.map(cell => {
+          // Escape quotes and wrap in quotes to handle commas within fields
+          const stringCell = String(cell).replace(/"/g, '""'); 
+          return `"${stringCell}"`; 
+        }).join(',')
+      )
+    ].join('\n');
+
+    // Create Blob and Download Link
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `JobIQ_Applications_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   if (isLoading) {
@@ -37,16 +106,29 @@ export const Dashboard: React.FC<DashboardProps> = ({ applications, onSelectApp,
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">Welcome Back! 👋</h1>
+          <h1 className="text-3xl font-bold text-slate-900 mb-2">Welcome Back, {getWelcomeName()}! 👋</h1>
           <p className="text-slate-500">Track, manage, and optimize your job applications.</p>
         </div>
-        <button
-          onClick={onNewApp}
-          className="flex items-center justify-center gap-2 bg-[#006A71] hover:bg-[#004D53] text-white py-3 px-6 rounded-xl font-semibold transition-all shadow-lg shadow-teal-200"
-        >
-          <Plus className="w-5 h-5" />
-          Add Application
-        </button>
+        <div className="flex items-center gap-3">
+            <button
+            onClick={handleExport}
+            disabled={applications.length === 0}
+            className={`flex items-center justify-center gap-2 bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 py-3 px-4 rounded-xl font-bold transition-all shadow-sm ${applications.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+            title="Export to Excel/CSV"
+            >
+            <Download className="w-5 h-5" />
+            <span className="hidden md:inline">Export Data</span>
+            </button>
+
+            <button
+            onClick={onNewApp}
+            className="flex items-center justify-center gap-2 bg-[#006A71] hover:bg-[#004D53] text-white py-3 px-6 rounded-xl font-semibold transition-all shadow-lg shadow-teal-200"
+            >
+            <Plus className="w-5 h-5" />
+            <span className="hidden md:inline">Add Application</span>
+            <span className="md:hidden">Add</span>
+            </button>
+        </div>
       </div>
 
       {/* Stats Cards (Optional placeholder for future) */}
