@@ -36,7 +36,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
              const guestUser = {
                 uid: 'guest-user',
                 displayName: 'Guest User',
-                email: 'guest@jobiq.app',
+                email: 'guest@jobhuntiq.app',
                 emailVerified: true,
                 isAnonymous: true,
                 phoneNumber: null,
@@ -75,7 +75,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const guestUser = {
         uid: 'guest-user',
         displayName: 'Guest User',
-        email: 'guest@jobiq.app',
+        email: 'guest@jobhuntiq.app',
         emailVerified: true,
         isAnonymous: true,
         photoURL: null,

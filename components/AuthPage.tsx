@@ -55,7 +55,7 @@ export const AuthPage: React.FC = () => {
              <img src="logo.png" className="w-10 h-10 object-contain brightness-0 invert" alt="logo" onError={(e) => { e.currentTarget.style.display='none'; }}/>
              <span className="text-white font-bold text-2xl">IQ</span>
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">Welcome to JobIQ</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">Welcome to JobHuntIQ</h1>
           <p className="text-teal-100 text-sm font-medium">Your intelligent AI assistant for career success.</p>
         </div>
 
@@ -149,7 +149,7 @@ export const AuthPage: React.FC = () => {
       
       <div className="mt-8 text-center">
         <p className="text-xs text-slate-400 font-medium mb-1">
-          &copy; 2025 JobIQ. Powered by Google Gemini.
+          &copy; 2025 JobHuntIQ. Powered by Google Gemini.
         </p>
         <p className="text-xs text-slate-400 font-medium">
           Build by <a href="https://www.linkedin.com/in/param-radadiya-77a4b51a6/" target="_blank" rel="noopener noreferrer" className="text-[#006A71] hover:underline font-bold">Param Radadiya</a>

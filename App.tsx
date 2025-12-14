@@ -146,7 +146,7 @@ const AppContent: React.FC = () => {
     return (
       <div className="h-screen w-full flex flex-col items-center justify-center bg-[#F0F9FA]">
         <Loader2 className="w-10 h-10 text-[#006A71] animate-spin mb-4" />
-        <p className="text-slate-500 font-medium animate-pulse">Loading JobIQ...</p>
+        <p className="text-slate-500 font-medium animate-pulse">Loading JobHuntIQ...</p>
       </div>
     );
   }
@@ -173,7 +173,7 @@ const AppContent: React.FC = () => {
       <main className="flex-1 flex flex-col h-full overflow-hidden relative w-full">
         {/* Mobile Header */}
         <div className="md:hidden bg-white border-b border-slate-200 p-4 flex items-center justify-between sticky top-0 z-40">
-           <span className="font-bold text-[#006A71]">JobIQ</span>
+           <span className="font-bold text-[#006A71]">JobHuntIQ</span>
            <button onClick={() => setCurrentAppId(null)} className="text-xs font-bold text-[#006A71]">Dashboard</button>
         </div>
 
@@ -199,7 +199,7 @@ const AppContent: React.FC = () => {
              
              <footer className="py-8 text-center">
                 <p className="text-xs text-slate-400 font-medium mb-1">
-                  &copy; 2025 JobIQ. Powered by Google Gemini.
+                  &copy; 2025 JobHuntIQ. Powered by Google Gemini.
                 </p>
                 <p className="text-xs text-slate-400 font-medium">
                   Build by <a href="https://www.linkedin.com/in/param-radadiya-77a4b51a6/" target="_blank" rel="noopener noreferrer" className="text-[#006A71] hover:underline font-bold">Param Radadiya</a>

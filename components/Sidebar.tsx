@@ -27,14 +27,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="flex items-center gap-2 cursor-pointer" onClick={() => onSelectApp(null)}>
            <img 
               src="logo.png" 
-              alt="JobIQ" 
+              alt="JobHuntIQ" 
               className="h-8 w-auto object-contain" 
               onError={(e) => {
                 e.currentTarget.style.display = 'none';
                 e.currentTarget.nextElementSibling?.classList.remove('hidden');
               }}
             />
-            <span className="hidden text-xl font-bold text-[#006A71] tracking-tight" id="sidebar-logo-text">JobIQ</span>
+            <span className="hidden text-xl font-bold text-[#006A71] tracking-tight" id="sidebar-logo-text">JobHuntIQ</span>
         </div>
         
         <button
