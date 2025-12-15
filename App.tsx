@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Dashboard } from './components/Dashboard';
 import { ApplicationDetail } from './components/ApplicationDetail';
+import { ChatCompanion } from './components/ChatCompanion';
 import { JobApplication } from './types';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { AuthPage } from './components/AuthPage';
@@ -12,6 +13,7 @@ const AppContent: React.FC = () => {
   const { user, loading, logout } = useAuth();
   const [applications, setApplications] = useState<JobApplication[]>([]);
   const [currentAppId, setCurrentAppId] = useState<string | null>(null);
+  const [activeView, setActiveView] = useState<'dashboard' | 'chat'>('dashboard');
   const [isLoadingData, setIsLoadingData] = useState(false);
 
   // Load Data
@@ -75,6 +77,7 @@ const AppContent: React.FC = () => {
       resumeText: '',
       recruiter: { name: '', designation: '', email: '', linkedin: '', phone: '' },
       remarks: '',
+      notes: [],
       aiResult: null,
       savedInterviewQuestions: [],
       createdAt: Date.now(),
@@ -157,34 +160,25 @@ const AppContent: React.FC = () => {
 
   const currentApp = applications.find(a => a.id === currentAppId);
 
-  return (
-    <div className="flex h-screen bg-[#F0F9FA] font-sans selection:bg-[#B2DFDB] selection:text-[#004D53] overflow-hidden">
-      
-      {/* Sidebar - Desktop */}
-      <Sidebar 
-        applications={applications}
-        currentAppId={currentAppId}
-        onSelectApp={setCurrentAppId}
-        onNewApp={handleNewApp}
-        onLogout={logout}
-      />
+  // Helper to render the main view content
+  const renderView = () => {
+    if (currentAppId && currentApp) {
+      return (
+        <ApplicationDetail 
+          application={currentApp}
+          onUpdate={handleUpdateApp}
+          onBack={() => setCurrentAppId(null)}
+          onDelete={() => handleDeleteApp(currentApp.id)}
+        />
+      );
+    }
 
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col h-full overflow-hidden relative w-full">
-        {/* Mobile Header */}
-        <div className="md:hidden bg-white border-b border-slate-200 p-4 flex items-center justify-between sticky top-0 z-40">
-           <span className="font-bold text-[#006A71]">JobHuntIQ</span>
-           <button onClick={() => setCurrentAppId(null)} className="text-xs font-bold text-[#006A71]">Dashboard</button>
-        </div>
-
-        {currentAppId && currentApp ? (
-          <ApplicationDetail 
-            application={currentApp}
-            onUpdate={handleUpdateApp}
-            onBack={() => setCurrentAppId(null)}
-            onDelete={() => handleDeleteApp(currentApp.id)}
-          />
-        ) : (
+    switch (activeView) {
+      case 'chat':
+        return <ChatCompanion />;
+      case 'dashboard':
+      default:
+        return (
           <div className="h-full overflow-y-auto">
              <Dashboard 
                applications={applications}
@@ -196,7 +190,6 @@ const AppContent: React.FC = () => {
                }}
                isLoading={isLoadingData}
              />
-             
              <footer className="py-8 text-center">
                 <p className="text-xs text-slate-400 font-medium mb-1">
                   &copy; 2025 JobHuntIQ. Powered by Google Gemini.
@@ -209,7 +202,33 @@ const AppContent: React.FC = () => {
                 )}
              </footer>
           </div>
-        )}
+        );
+    }
+  };
+
+  return (
+    <div className="flex h-screen bg-[#F0F9FA] font-sans selection:bg-[#B2DFDB] selection:text-[#004D53] overflow-hidden">
+      
+      {/* Sidebar - Desktop */}
+      <Sidebar 
+        applications={applications}
+        currentAppId={currentAppId}
+        activeView={activeView}
+        onSelectApp={setCurrentAppId}
+        onChangeView={setActiveView}
+        onNewApp={handleNewApp}
+        onLogout={logout}
+      />
+
+      {/* Main Content */}
+      <main className="flex-1 flex flex-col h-full overflow-hidden relative w-full">
+        {/* Mobile Header */}
+        <div className="md:hidden bg-white border-b border-slate-200 p-4 flex items-center justify-between sticky top-0 z-40">
+           <span className="font-bold text-[#006A71]">JobHuntIQ</span>
+           <button onClick={() => { setCurrentAppId(null); setActiveView('dashboard'); }} className="text-xs font-bold text-[#006A71]">Dashboard</button>
+        </div>
+
+        {renderView()}
       </main>
     </div>
   );

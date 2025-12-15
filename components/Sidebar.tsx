@@ -1,12 +1,14 @@
 import React from 'react';
-import { LayoutDashboard, Plus, Building2, ChevronRight, LogOut, User } from 'lucide-react';
+import { LayoutDashboard, Plus, Building2, ChevronRight, LogOut, User, MessageCircle } from 'lucide-react';
 import { JobApplication } from '../types';
 import { useAuth } from '../context/AuthContext';
 
 interface SidebarProps {
   applications: JobApplication[];
   currentAppId: string | null;
+  activeView: 'dashboard' | 'chat';
   onSelectApp: (id: string | null) => void;
+  onChangeView: (view: 'dashboard' | 'chat') => void;
   onNewApp: () => void;
   onLogout: () => void;
 }
@@ -14,7 +16,9 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ 
   applications, 
   currentAppId, 
+  activeView,
   onSelectApp,
+  onChangeView,
   onNewApp,
   onLogout
 }) => {
@@ -24,7 +28,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <div className="w-72 bg-white border-r border-slate-200 h-screen flex flex-col sticky top-0 left-0 flex-shrink-0 z-30 hidden md:flex">
       {/* Header */}
       <div className="p-6 border-b border-slate-100 flex flex-col gap-4">
-        <div className="flex items-center gap-2 cursor-pointer" onClick={() => onSelectApp(null)}>
+        <div className="flex items-center gap-2 cursor-pointer" onClick={() => { onSelectApp(null); onChangeView('dashboard'); }}>
            <img 
               src="logo.png" 
               alt="JobHuntIQ" 
@@ -53,15 +57,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
         
         <button
-          onClick={() => onSelectApp(null)}
+          onClick={() => { onSelectApp(null); onChangeView('dashboard'); }}
           className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-            currentAppId === null 
+            currentAppId === null && activeView === 'dashboard'
               ? 'bg-[#E0F2F1] text-[#006A71]' 
               : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
           }`}
         >
           <LayoutDashboard className="w-4 h-4" />
           Dashboard
+        </button>
+
+        <button
+          onClick={() => { onSelectApp(null); onChangeView('chat'); }}
+          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+            currentAppId === null && activeView === 'chat'
+              ? 'bg-[#E0F2F1] text-[#006A71]' 
+              : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+          }`}
+        >
+          <MessageCircle className="w-4 h-4" />
+          AI Companion
         </button>
 
         <div className="mt-8 px-3 mb-2 text-xs font-bold text-slate-400 uppercase tracking-wider flex justify-between items-center">

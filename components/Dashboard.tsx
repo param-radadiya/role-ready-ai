@@ -48,26 +48,41 @@ export const Dashboard: React.FC<DashboardProps> = ({ applications, onSelectApp,
       "Recruiter Email",
       "Recruiter LinkedIn",
       "Recruiter Phone",
-      "Remarks"
+      "Notes"
     ];
 
     // Map Data to CSV Rows
-    const rows = applications.map(app => [
-      app.id,
-      app.company || '',
-      app.role || '',
-      app.status,
-      app.dateApplied,
-      app.location || '',
-      app.ctc || '',
-      app.jobLink || '',
-      app.recruiter?.name || '',
-      app.recruiter?.designation || '',
-      app.recruiter?.email || '',
-      app.recruiter?.linkedin || '',
-      app.recruiter?.phone || '',
-      app.remarks || '' // Ensure remarks are included
-    ]);
+    const rows = applications.map(app => {
+      // Format notes into a single string
+      let notesContent = "";
+      
+      // Include legacy remarks if present
+      if (app.remarks) {
+        notesContent += `[Legacy Remarks]: ${app.remarks}\n`;
+      }
+      
+      // Include new structured notes
+      if (app.notes && app.notes.length > 0) {
+        notesContent += app.notes.map(n => `[${n.title} - ${n.date}]: ${n.content}`).join("\n\n");
+      }
+
+      return [
+        app.id,
+        app.company || '',
+        app.role || '',
+        app.status,
+        app.dateApplied,
+        app.location || '',
+        app.ctc || '',
+        app.jobLink || '',
+        app.recruiter?.name || '',
+        app.recruiter?.designation || '',
+        app.recruiter?.email || '',
+        app.recruiter?.linkedin || '',
+        app.recruiter?.phone || '',
+        notesContent
+      ];
+    });
 
     // Construct CSV String
     const csvContent = [

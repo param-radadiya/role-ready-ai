@@ -1,17 +1,14 @@
-
 import React from 'react';
-import { Sparkles, Target, MessageSquare, Loader2, AlertCircle } from 'lucide-react';
-import { TaskType, AnalysisResult, InterviewQuestion } from '../types';
+import { Sparkles, Target, Loader2, AlertCircle } from 'lucide-react';
+import { TaskType, AnalysisResult } from '../types';
 import { analyzeJobApplication } from '../services/geminiService';
 import { ResumeSuggestions } from './ResumeSuggestions';
-import { InterviewPrep } from './InterviewPrep';
 
 interface AIToolsProps {
   jobDesc: string;
   resume: string;
-  onUpdateResult: (result: AnalysisResult | null, questions: InterviewQuestion[]) => void;
+  onUpdateResult: (result: AnalysisResult | null) => void;
   savedResult: AnalysisResult | null;
-  savedQuestions: InterviewQuestion[];
 }
 
 export const AITools: React.FC<AIToolsProps> = ({ 
@@ -19,7 +16,6 @@ export const AITools: React.FC<AIToolsProps> = ({
   resume, 
   onUpdateResult,
   savedResult,
-  savedQuestions
 }) => {
   const [selectedTask, setSelectedTask] = React.useState<TaskType>('summary');
   const [isAnalyzing, setIsAnalyzing] = React.useState(false);
@@ -36,18 +32,7 @@ export const AITools: React.FC<AIToolsProps> = ({
 
     try {
       const data = await analyzeJobApplication(jobDesc, resume, selectedTask);
-      
-      let newQuestions: InterviewQuestion[] = [];
-      if (data.interviewQuestions) {
-         newQuestions = data.interviewQuestions.map((q, index) => ({
-          ...q,
-          id: `q-${index}-${Date.now()}`,
-          userAnswer: ''
-        }));
-      }
-
-      onUpdateResult(data, newQuestions);
-
+      onUpdateResult(data);
     } catch (err: any) {
       setError(err.message || "An unexpected error occurred.");
     } finally {
@@ -55,6 +40,7 @@ export const AITools: React.FC<AIToolsProps> = ({
     }
   };
 
+  // Interview task removed from here as it has its own tab
   const tasks: { id: TaskType; label: string; icon: React.ReactNode, desc: string }[] = [
     { 
       id: 'summary', 
@@ -67,19 +53,13 @@ export const AITools: React.FC<AIToolsProps> = ({
       label: 'Score & Improve', 
       icon: <Target className="w-5 h-5" />,
       desc: "ATS Score & Bullet points"
-    },
-    { 
-      id: 'interview', 
-      label: 'Interview Prep', 
-      icon: <MessageSquare className="w-5 h-5" />,
-      desc: "Practice Q&A"
-    },
+    }
   ];
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2">
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
         {tasks.map((task) => (
           <button
             key={task.id}
@@ -143,11 +123,11 @@ export const AITools: React.FC<AIToolsProps> = ({
       </div>
 
       {/* Results Display */}
-      {(savedResult || savedQuestions.length > 0) && (
+      {savedResult && (
         <div className="mt-10 border-t border-slate-200 pt-8">
           <div className="flex items-center gap-2 mb-6">
              <span className="bg-[#E0F2F1] text-[#006A71] text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">Results</span>
-             <h3 className="text-xl font-bold text-slate-900">AI Insights</h3>
+             <h3 className="text-xl font-bold text-slate-900">Application Analysis</h3>
           </div>
 
           {/* Show results based on what data we have available */}
@@ -167,13 +147,6 @@ export const AITools: React.FC<AIToolsProps> = ({
                   atsScoreSummary={savedResult.atsScoreSummary}
                />
              </div>
-          )}
-
-          {savedQuestions.length > 0 && (
-            <div>
-              <h4 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3">Interview Prep</h4>
-              <InterviewPrep questions={savedQuestions} />
-            </div>
           )}
         </div>
       )}

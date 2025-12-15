@@ -33,6 +33,13 @@ export interface RecruiterInfo {
   phone: string;
 }
 
+export interface Note {
+  id: string;
+  title: string;
+  content: string;
+  date: string;
+}
+
 export interface JobApplication {
   id: string;
   company: string;
@@ -45,7 +52,8 @@ export interface JobApplication {
   jobDescription: string;
   resumeText: string; // The tailored resume for this job
   recruiter: RecruiterInfo;
-  remarks?: string; // Personal notes/remarks
+  remarks?: string; // Deprecated, keeping for backward compatibility
+  notes?: Note[]; // New structured notes
   
   // Persisted AI Results
   aiResult: AnalysisResult | null;

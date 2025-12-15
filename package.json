@@ -15,7 +15,9 @@
     "lucide-react": "^0.556.0",
     "mammoth": "1.8.0",
     "pdfjs-dist": "3.11.174",
-    "firebase": "^12.6.0"
+    "firebase": "^12.6.0",
+    "react-markdown": "9.0.1",
+    "remark-gfm": "4.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

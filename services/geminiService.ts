@@ -1,4 +1,4 @@
-import { GoogleGenAI, Type, Schema } from "@google/genai";
+import { GoogleGenAI, Type, Schema, Chat } from "@google/genai";
 import { AnalysisResult, TaskType } from "../types";
 
 const apiKey = process.env.API_KEY || "";
@@ -71,6 +71,26 @@ const interviewSchema: Schema = {
     },
   },
   required: ["interviewQuestions"],
+};
+
+export const createChatSession = (): Chat => {
+  if (!apiKey) {
+    throw new Error("API Key is missing.");
+  }
+  
+  return ai.chats.create({
+    model: 'gemini-2.5-flash',
+    config: {
+      systemInstruction: `You are JobHuntIQ's AI Career Companion. 
+      Your goals:
+      1. Help users find latest jobs on the internet. You MUST ask for their desired Role, Sector/Industry, and Experience Level/Location before searching.
+      2. Use the 'googleSearch' tool to find real, active job listings when requested.
+      3. Help with general interview preparation (hygiene questions, behavioral tips).
+      4. Be a supportive, professional, and encouraging job hunt partner.
+      5. Keep responses concise and easy to read.`,
+      tools: [{ googleSearch: {} }],
+    }
+  });
 };
 
 export const analyzeJobApplication = async (
