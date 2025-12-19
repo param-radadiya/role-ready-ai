@@ -1,10 +1,10 @@
 import React, { useState, useRef } from 'react';
 import { JobApplication, ApplicationStatus, AnalysisResult, InterviewQuestion, Note } from '../types';
-import { MapPin, Calendar, Link as LinkIcon, DollarSign, User, FileText, Briefcase, ChevronLeft, Upload, Loader2, Save, Sparkles, Trash2, Mail, Linkedin, Phone, StickyNote, Plus, X, Video, MessageSquare, Mic, Check, X as XIcon } from 'lucide-react';
+import { MapPin, Calendar, Link as LinkIcon, DollarSign, User, FileText, Briefcase, ChevronLeft, Upload, Loader2, Save, Sparkles, Trash2, Mail, Linkedin, Phone, StickyNote, Plus, X, Video, MessageSquare, Mic, Check, X as XIcon, Search, Info } from 'lucide-react';
 import { AITools } from './AITools';
 import { MockInterview } from './MockInterview';
 import { InterviewPrep } from './InterviewPrep';
-import { analyzeJobApplication } from '../services/geminiService';
+import { analyzeJobApplication, fetchJobDetails, extractJobDataFromText } from '../services/geminiService';
 import * as pdfjsLib from 'pdfjs-dist';
 import * as mammoth from 'mammoth';
 
@@ -29,8 +29,11 @@ export const ApplicationDetail: React.FC<ApplicationDetailProps> = ({ applicatio
   // File Processing States
   const [isProcessingFile, setIsProcessingFile] = useState(false);
   const [isProcessingJD, setIsProcessingJD] = useState(false);
+  const [isProcessingJobPDF, setIsProcessingJobPDF] = useState(false);
+  const [isFetchingJob, setIsFetchingJob] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const jdFileInputRef = useRef<HTMLInputElement>(null);
+  const jobPortalPDFRef = useRef<HTMLInputElement>(null);
 
   // Notes State
   const [isAddingNote, setIsAddingNote] = useState(false);
@@ -65,6 +68,69 @@ export const ApplicationDetail: React.FC<ApplicationDetailProps> = ({ applicatio
     onUpdate({ ...application, status });
   };
 
+  const handleFetchJobData = async () => {
+    if (!application.jobLink) {
+      alert("Please enter a job link first.");
+      return;
+    }
+
+    setIsFetchingJob(true);
+    try {
+      const data = await fetchJobDetails(application.jobLink);
+      
+      if (!data || Object.keys(data).length === 0) {
+        throw new Error("No data returned from AI");
+      }
+
+      const updatedApp = {
+        ...application,
+        role: data.role || application.role,
+        company: data.company || application.company,
+        location: data.location || application.location,
+        ctc: data.ctc || application.ctc,
+        jobDescription: data.jobDescription || application.jobDescription,
+      };
+      
+      onUpdate(updatedApp);
+    } catch (e) {
+      console.error(e);
+      alert("Failed to fetch job data directly from link. Please use the 'Job Portal PDF' upload option below for better results.");
+    } finally {
+      setIsFetchingJob(false);
+    }
+  };
+
+  const handleJobPortalPDFUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsProcessingJobPDF(true);
+    try {
+      let text = "";
+      if (file.type === "application/pdf") text = await extractTextFromPdf(file);
+      else if (file.name.endsWith('.docx')) text = await extractTextFromDocx(file);
+      else text = await file.text();
+      
+      const data = await extractJobDataFromText(text);
+      
+      const updatedApp = {
+        ...application,
+        role: data.role || application.role,
+        company: data.company || application.company,
+        location: data.location || application.location,
+        ctc: data.ctc || application.ctc,
+        jobDescription: data.jobDescription || application.jobDescription,
+      };
+      
+      onUpdate(updatedApp);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to extract data from the job portal file. Please ensure it's a valid text-based PDF.");
+    } finally {
+      setIsProcessingJobPDF(false);
+      if (jobPortalPDFRef.current) jobPortalPDFRef.current.value = '';
+    }
+  };
+
   // Inline delete handler to avoid window.confirm issues in embedded environments
   const handleDeleteClick = () => {
     setShowDeleteConfirm(true);
@@ -80,7 +146,6 @@ export const ApplicationDetail: React.FC<ApplicationDetailProps> = ({ applicatio
   };
 
   const handleAIResultUpdate = (result: AnalysisResult | null) => {
-    // Only update non-question fields here (Summary, Bullets)
     const mergedResult = { ...(application.aiResult || {}), ...(result || {}) };
     onUpdate({
       ...application,
@@ -123,7 +188,6 @@ export const ApplicationDetail: React.FC<ApplicationDetailProps> = ({ applicatio
     const updatedNotes = [newNote, ...(application.notes || [])];
     onUpdate({ ...application, notes: updatedNotes });
 
-    // Reset form
     setNewNoteTitle('');
     setNewNoteContent('');
     setIsAddingNote(false);
@@ -298,17 +362,65 @@ export const ApplicationDetail: React.FC<ApplicationDetailProps> = ({ applicatio
           
           {/* OVERVIEW TAB */}
           {activeTab === 'overview' && (
-            <div className="space-y-8 animate-in fade-in pb-10">
+            <div className="space-y-6 animate-in fade-in pb-10">
               
-              {/* Quick Info Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Location */}
-                <div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex flex-col group focus-within:ring-2 focus-within:ring-[#006A71]/20">
-                  <label className="flex items-center gap-2 text-xs font-bold text-[#006A71] uppercase tracking-wider mb-3">
-                    <MapPin className="w-3.5 h-3.5" /> Location
+              {/* Top Section: Smart Auto-fill (PDF ONLY) */}
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="bg-[#E0F2F1] px-6 py-3 border-b border-slate-200 flex items-center justify-between">
+                   <h3 className="text-sm font-bold text-[#006A71] flex items-center gap-2">
+                     <Sparkles className="w-4 h-4" /> Smart Auto-fill
+                   </h3>
+                   <div className="text-[10px] text-teal-700 bg-teal-50 px-2 py-0.5 rounded border border-teal-100 font-bold uppercase tracking-wider">Fast Extraction</div>
+                </div>
+                
+                <div className="p-6">
+                  <div className="space-y-4">
+                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+                        Job Portal PDF (LinkedIn, Indeed, etc.)
+                     </label>
+                     <button
+                       onClick={() => jobPortalPDFRef.current?.click()}
+                       disabled={isProcessingJobPDF}
+                       className="w-full flex items-center justify-center gap-3 bg-white hover:bg-slate-50 text-[#006A71] border-2 border-dashed border-[#B2DFDB] py-4 rounded-xl font-bold text-base transition-all group"
+                     >
+                       {isProcessingJobPDF ? <Loader2 className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5 group-hover:-translate-y-0.5 transition-transform" />}
+                       {isProcessingJobPDF ? 'Extracting Details...' : 'Upload Page PDF'}
+                     </button>
+                     <input type="file" ref={jobPortalPDFRef} className="hidden" onChange={handleJobPortalPDFUpload} accept=".pdf,.docx,.txt" />
+                     
+                     <div className="bg-blue-50/70 rounded-xl p-3 border border-blue-100 flex gap-3">
+                        <Info className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                        <p className="text-[11px] text-blue-800 leading-relaxed">
+                           <strong>Pro Tip:</strong> Save the job portal page as a <strong>PDF</strong> (Ctrl+P -> Save as PDF) and upload it. 
+                           JobHuntIQ will fill the <strong>Role, Company, Location, CTC, and Description</strong> verbatim!
+                        </p>
+                     </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 2x2 Grid: Link, Location, Applied Date, CTC */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Job Link */}
+                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col group">
+                  <label className="flex items-center gap-2 text-[10px] font-bold text-[#006A71] uppercase tracking-wider mb-2">
+                    <LinkIcon className="w-3 h-3" /> Job Application Link
                   </label>
                   <input 
-                    className="w-full text-base font-medium text-slate-800 bg-[#F0F9FA] border border-transparent rounded-lg p-2.5 focus:bg-white focus:border-[#006A71] outline-none transition-all placeholder:text-slate-300"
+                    className="w-full text-sm font-medium text-slate-800 bg-[#F0F9FA] border border-transparent rounded-lg p-2.5 focus:bg-white focus:border-[#006A71] outline-none transition-all placeholder:text-slate-300 shadow-inner"
+                    placeholder="Reference link (LinkedIn, etc.)..."
+                    value={application.jobLink}
+                    onChange={(e) => handleFieldChange('jobLink', e.target.value)}
+                  />
+                </div>
+
+                {/* Location */}
+                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col group">
+                  <label className="flex items-center gap-2 text-[10px] font-bold text-[#006A71] uppercase tracking-wider mb-2">
+                    <MapPin className="w-3 h-3" /> Location
+                  </label>
+                  <input 
+                    className="w-full text-sm font-medium text-slate-800 bg-[#F0F9FA] border border-transparent rounded-lg p-2.5 focus:bg-white focus:border-[#006A71] outline-none transition-all placeholder:text-slate-300 shadow-inner"
                     placeholder="e.g. Remote, NY"
                     value={application.location}
                     onChange={(e) => handleFieldChange('location', e.target.value)}
@@ -316,152 +428,120 @@ export const ApplicationDetail: React.FC<ApplicationDetailProps> = ({ applicatio
                 </div>
 
                 {/* Applied Date */}
-                <div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex flex-col group focus-within:ring-2 focus-within:ring-[#006A71]/20">
-                  <label className="flex items-center gap-2 text-xs font-bold text-[#006A71] uppercase tracking-wider mb-3">
-                    <Calendar className="w-3.5 h-3.5" /> Applied Date
+                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col group">
+                  <label className="flex items-center gap-2 text-[10px] font-bold text-[#006A71] uppercase tracking-wider mb-2">
+                    <Calendar className="w-3 h-3" /> Applied Date
                   </label>
                   <input 
                     type="date"
-                    className="w-full text-base font-medium text-slate-800 bg-[#F0F9FA] border border-transparent rounded-lg p-2.5 focus:bg-white focus:border-[#006A71] outline-none transition-all"
+                    className="w-full text-sm font-medium text-slate-800 bg-[#F0F9FA] border border-transparent rounded-lg p-2.5 focus:bg-white focus:border-[#006A71] outline-none transition-all shadow-inner"
                     value={application.dateApplied}
                     onChange={(e) => handleFieldChange('dateApplied', e.target.value)}
                   />
                 </div>
 
                 {/* CTC */}
-                <div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex flex-col group focus-within:ring-2 focus-within:ring-[#006A71]/20">
-                  <label className="flex items-center gap-2 text-xs font-bold text-[#006A71] uppercase tracking-wider mb-3">
-                    <DollarSign className="w-3.5 h-3.5" /> CTC / Salary
+                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col group">
+                  <label className="flex items-center gap-2 text-[10px] font-bold text-[#006A71] uppercase tracking-wider mb-2">
+                    <DollarSign className="w-3 h-3" /> CTC / Salary
                   </label>
                   <input 
-                    className="w-full text-base font-medium text-slate-800 bg-[#F0F9FA] border border-transparent rounded-lg p-2.5 focus:bg-white focus:border-[#006A71] outline-none transition-all placeholder:text-slate-300"
+                    className="w-full text-sm font-medium text-slate-800 bg-[#F0F9FA] border border-transparent rounded-lg p-2.5 focus:bg-white focus:border-[#006A71] outline-none transition-all placeholder:text-slate-300 shadow-inner"
                     placeholder="e.g. $120k"
                     value={application.ctc}
                     onChange={(e) => handleFieldChange('ctc', e.target.value)}
                   />
                 </div>
-
-                {/* Job Link */}
-                <div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex flex-col group focus-within:ring-2 focus-within:ring-[#006A71]/20">
-                  <label className="flex items-center gap-2 text-xs font-bold text-[#006A71] uppercase tracking-wider mb-3">
-                    <LinkIcon className="w-3.5 h-3.5" /> Job Link
-                  </label>
-                  <input 
-                    className="w-full text-base font-medium text-slate-800 bg-[#F0F9FA] border border-transparent rounded-lg p-2.5 focus:bg-white focus:border-[#006A71] outline-none transition-all placeholder:text-slate-300"
-                    placeholder="https://..."
-                    value={application.jobLink}
-                    onChange={(e) => handleFieldChange('jobLink', e.target.value)}
-                  />
-                </div>
               </div>
 
-              {/* Job Description & Resume */}
-              <div className="flex flex-col md:flex-row gap-6">
+              {/* Descriptions Row - Side-by-side with half-height textareas */}
+              <div className="flex flex-col lg:flex-row gap-6">
                 <div className="flex-1 flex flex-col">
                   <div className="flex items-center justify-between mb-2">
-                    <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                      <Briefcase className="w-4 h-4 text-[#006A71]" /> Job Description
+                    <label className="text-xs font-bold text-slate-700 flex items-center gap-2 uppercase tracking-wider">
+                      <Briefcase className="w-3.5 h-3.5 text-[#006A71]" /> Job Description
                     </label>
                     <button
                       onClick={() => jdFileInputRef.current?.click()}
                       disabled={isProcessingJD}
-                      className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-lg font-medium transition-colors flex items-center gap-1"
+                      className="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-600 px-2 py-1 rounded font-bold transition-colors flex items-center gap-1"
                     >
-                       {isProcessingJD ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
-                       {isProcessingJD ? 'Parsing...' : 'Import File'}
+                       {isProcessingJD ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <Upload className="w-2.5 h-2.5" />}
+                       Import
                     </button>
                     <input type="file" ref={jdFileInputRef} className="hidden" onChange={handleJDUpload} accept=".pdf,.docx,.txt" />
                   </div>
                   <textarea
-                    className="flex-1 w-full p-4 rounded-xl border border-slate-200 focus:border-[#006A71] focus:ring-4 focus:ring-[#006A71]/10 outline-none text-sm min-h-[400px] resize-none bg-white shadow-sm font-mono text-slate-600 leading-relaxed"
-                    placeholder="Paste the full job description here to enable AI features..."
+                    className="flex-1 w-full p-4 rounded-xl border border-slate-200 focus:border-[#006A71] focus:ring-4 focus:ring-[#006A71]/10 outline-none text-[11px] min-h-[220px] max-h-[250px] resize-y bg-white shadow-sm font-mono text-slate-600 leading-relaxed"
+                    placeholder="Verbatim job details..."
                     value={application.jobDescription}
                     onChange={(e) => handleFieldChange('jobDescription', e.target.value)}
                   />
                 </div>
 
-                {/* Resume */}
                 <div className="flex-1 flex flex-col">
                   <div className="flex items-center justify-between mb-2">
-                    <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-emerald-500" /> Your Resume for this Role
+                    <label className="text-xs font-bold text-slate-700 flex items-center gap-2 uppercase tracking-wider">
+                      <FileText className="w-3.5 h-3.5 text-emerald-500" /> Resume
                     </label>
                     <button
                       onClick={() => fileInputRef.current?.click()}
                       disabled={isProcessingFile}
-                      className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-lg font-medium transition-colors flex items-center gap-1"
+                      className="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-600 px-2 py-1 rounded font-bold transition-colors flex items-center gap-1"
                     >
-                       {isProcessingFile ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
-                       {isProcessingFile ? 'Parsing...' : 'Import File'}
+                       {isProcessingFile ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <Upload className="w-2.5 h-2.5" />}
+                       Import
                     </button>
                     <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileUpload} accept=".pdf,.docx,.txt" />
                   </div>
                   <textarea
-                    className="flex-1 w-full p-4 rounded-xl border border-slate-200 focus:border-[#006A71] focus:ring-4 focus:ring-[#006A71]/10 outline-none text-sm min-h-[400px] resize-none bg-white shadow-sm font-mono text-slate-600 leading-relaxed"
-                    placeholder="Paste your resume content here or upload..."
+                    className="flex-1 w-full p-4 rounded-xl border border-slate-200 focus:border-[#006A71] focus:ring-4 focus:ring-[#006A71]/10 outline-none text-[11px] min-h-[220px] max-h-[250px] resize-y bg-white shadow-sm font-mono text-slate-600 leading-relaxed"
+                    placeholder="Your resume content..."
                     value={application.resumeText}
                     onChange={(e) => handleFieldChange('resumeText', e.target.value)}
                   />
                 </div>
               </div>
 
-              {/* Recruiter Info */}
+              {/* Recruiter Details */}
               <div className="bg-white rounded-2xl p-6 border border-slate-200 border-dashed border-[#006A71]/30 bg-[#F0F9FA]/30">
                 <h3 className="text-sm font-bold text-[#006A71] flex items-center gap-2 mb-6">
                   <User className="w-4 h-4" /> Recruiter Details
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Name and Designation */}
                   <div className="space-y-4">
                      <div>
-                       <label className="block text-xs font-semibold text-slate-500 mb-1.5 ml-1">Name</label>
+                       <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Name</label>
                        <input 
                         className="w-full p-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-[#006A71] bg-white shadow-sm"
-                        placeholder="Recruiter Name"
+                        placeholder="Name"
                         value={application.recruiter.name}
                         onChange={(e) => handleFieldChange('name', e.target.value)}
                        />
                      </div>
                      <div>
-                       <label className="block text-xs font-semibold text-slate-500 mb-1.5 ml-1">Designation / Role</label>
+                       <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Designation</label>
                        <input 
                         className="w-full p-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-[#006A71] bg-white shadow-sm"
-                        placeholder="e.g. Senior Talent Acquisition"
+                        placeholder="e.g. Talent Lead"
                         value={application.recruiter.designation}
                         onChange={(e) => handleFieldChange('designation', e.target.value)}
                        />
                      </div>
                   </div>
 
-                  {/* Contact Info */}
                   <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm space-y-4">
-                     <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Contact Info</h4>
                      <div className="flex items-center gap-2">
                         <Mail className="w-4 h-4 text-slate-400" />
-                        <input 
-                          className="flex-1 p-2 border-b border-slate-200 text-sm outline-none focus:border-[#006A71] bg-transparent"
-                          placeholder="Email Address"
-                          value={application.recruiter.email}
-                          onChange={(e) => handleFieldChange('email', e.target.value)}
-                        />
+                        <input className="flex-1 p-2 border-b border-slate-100 text-sm outline-none focus:border-[#006A71] bg-transparent" placeholder="Email" value={application.recruiter.email} onChange={(e) => handleFieldChange('email', e.target.value)} />
                      </div>
                      <div className="flex items-center gap-2">
                         <Linkedin className="w-4 h-4 text-slate-400" />
-                        <input 
-                          className="flex-1 p-2 border-b border-slate-200 text-sm outline-none focus:border-[#006A71] bg-transparent"
-                          placeholder="LinkedIn URL"
-                          value={application.recruiter.linkedin}
-                          onChange={(e) => handleFieldChange('linkedin', e.target.value)}
-                        />
+                        <input className="flex-1 p-2 border-b border-slate-100 text-sm outline-none focus:border-[#006A71] bg-transparent" placeholder="LinkedIn" value={application.recruiter.linkedin} onChange={(e) => handleFieldChange('linkedin', e.target.value)} />
                      </div>
                      <div className="flex items-center gap-2">
                         <Phone className="w-4 h-4 text-slate-400" />
-                        <input 
-                          className="flex-1 p-2 border-b border-slate-200 text-sm outline-none focus:border-[#006A71] bg-transparent"
-                          placeholder="Phone Number"
-                          value={application.recruiter.phone}
-                          onChange={(e) => handleFieldChange('phone', e.target.value)}
-                        />
+                        <input className="flex-1 p-2 border-b border-slate-100 text-sm outline-none focus:border-[#006A71] bg-transparent" placeholder="Phone" value={application.recruiter.phone} onChange={(e) => handleFieldChange('phone', e.target.value)} />
                      </div>
                   </div>
                 </div>
@@ -470,24 +550,18 @@ export const ApplicationDetail: React.FC<ApplicationDetailProps> = ({ applicatio
             </div>
           )}
 
-          {/* APPLICATION ASSISTANT TAB */}
+          {/* AI Assistant Tab */}
           {activeTab === 'ai' && (
             <div className="max-w-4xl mx-auto pb-10">
               <div className="mb-6 text-center">
                 <h2 className="text-2xl font-bold text-slate-900">Application Assistant</h2>
                 <p className="text-slate-500 mt-1">Generate tailored content like summaries and bullet points.</p>
               </div>
-              
-              <AITools 
-                jobDesc={application.jobDescription}
-                resume={application.resumeText}
-                onUpdateResult={handleAIResultUpdate}
-                savedResult={application.aiResult}
-              />
+              <AITools jobDesc={application.jobDescription} resume={application.resumeText} onUpdateResult={handleAIResultUpdate} savedResult={application.aiResult} />
             </div>
           )}
 
-          {/* INTERVIEW PREP TAB */}
+          {/* Interview Prep Tab */}
           {activeTab === 'interview' && (
              <div className="h-full">
                  {interviewSubTab === 'menu' && (
@@ -496,200 +570,57 @@ export const ApplicationDetail: React.FC<ApplicationDetailProps> = ({ applicatio
                             <h2 className="text-2xl font-bold text-slate-900">Interview Preparation</h2>
                             <p className="text-slate-500 mt-1">Choose how you want to prepare for this role.</p>
                          </div>
-                         
                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                             {/* Practice Questions Option */}
-                             <button 
-                                onClick={() => setInterviewSubTab('practice')}
-                                className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm hover:shadow-lg hover:border-[#006A71] transition-all text-left group"
-                             >
-                                 <div className="w-14 h-14 bg-[#E0F2F1] text-[#006A71] rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                                    <MessageSquare className="w-7 h-7" />
-                                 </div>
+                             <button onClick={() => setInterviewSubTab('practice')} className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm hover:shadow-lg hover:border-[#006A71] transition-all text-left group">
+                                 <div className="w-14 h-14 bg-[#E0F2F1] text-[#006A71] rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"><MessageSquare className="w-7 h-7" /></div>
                                  <h3 className="text-xl font-bold text-slate-800 mb-2">Practice Questions</h3>
-                                 <p className="text-slate-500 text-sm leading-relaxed">
-                                     Generate static interview questions based on the Job Description and your Resume. Review them at your own pace.
-                                 </p>
+                                 <p className="text-slate-500 text-sm leading-relaxed">Static interview questions based on the Job Description and your Resume.</p>
                              </button>
-
-                             {/* Mock Interview Option */}
-                             <button 
-                                onClick={() => setInterviewSubTab('mock')}
-                                className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm hover:shadow-lg hover:border-[#006A71] transition-all text-left group"
-                             >
-                                 <div className="w-14 h-14 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                                    <Mic className="w-7 h-7" />
-                                 </div>
+                             <button onClick={() => setInterviewSubTab('mock')} className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm hover:shadow-lg hover:border-[#006A71] transition-all text-left group">
+                                 <div className="w-14 h-14 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"><Mic className="w-7 h-7" /></div>
                                  <h3 className="text-xl font-bold text-slate-800 mb-2">Live Mock Interview</h3>
-                                 <p className="text-slate-500 text-sm leading-relaxed">
-                                     Start a real-time voice session with the AI Interviewer. Receive instant feedback on your performance.
-                                 </p>
+                                 <p className="text-slate-500 text-sm leading-relaxed">Start a real-time voice session with the AI Interviewer.</p>
                              </button>
                          </div>
                      </div>
                  )}
-
                  {interviewSubTab === 'practice' && (
                      <div className="max-w-4xl mx-auto py-6 pb-20">
-                         <button onClick={() => setInterviewSubTab('menu')} className="mb-6 flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors">
-                             <ChevronLeft className="w-4 h-4" /> Back to Menu
-                         </button>
-                         
+                         <button onClick={() => setInterviewSubTab('menu')} className="mb-6 flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors"><ChevronLeft className="w-4 h-4" /> Back</button>
                          <div className="flex items-center justify-between mb-8">
                              <div>
                                  <h2 className="text-2xl font-bold text-slate-900">Practice Q&A Queue</h2>
                                  <p className="text-slate-500">Tailored questions for {application.role || 'this role'}</p>
                              </div>
-                             <button
-                               onClick={handleGenerateQuestions}
-                               disabled={isGeneratingQuestions || !application.jobDescription}
-                               className={`
-                                 flex items-center gap-2 px-6 py-3 rounded-xl text-white font-bold shadow-lg transition-all
-                                 ${isGeneratingQuestions || !application.jobDescription ? 'bg-slate-300 cursor-not-allowed' : 'bg-[#006A71] hover:bg-[#004D53]'}
-                               `}
-                             >
+                             <button onClick={handleGenerateQuestions} disabled={isGeneratingQuestions || !application.jobDescription} className={`flex items-center gap-2 px-6 py-3 rounded-xl text-white font-bold shadow-lg transition-all ${isGeneratingQuestions || !application.jobDescription ? 'bg-slate-300 cursor-not-allowed' : 'bg-[#006A71] hover:bg-[#004D53]'}`}>
                                  {isGeneratingQuestions ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
                                  {application.savedInterviewQuestions.length > 0 ? 'Regenerate Questions' : 'Generate Questions'}
                              </button>
                          </div>
-
-                         {!application.jobDescription && (
-                             <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center gap-3 text-amber-800 mb-6">
-                                 <Sparkles className="w-5 h-5" />
-                                 <p className="text-sm font-medium">Please add a Job Description in the Overview tab to generate questions.</p>
-                             </div>
-                         )}
-
-                         {application.savedInterviewQuestions.length > 0 ? (
-                             <InterviewPrep questions={application.savedInterviewQuestions} />
-                         ) : (
-                             <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
-                                 <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
-                                     <MessageSquare className="w-8 h-8 text-slate-300" />
-                                 </div>
-                                 <p className="text-slate-500 font-medium">No questions generated yet.</p>
-                             </div>
-                         )}
+                         {application.savedInterviewQuestions.length > 0 ? <InterviewPrep questions={application.savedInterviewQuestions} /> : <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50/50"><MessageSquare className="w-8 h-8 text-slate-300 mx-auto mb-4" /><p className="text-slate-500 font-medium">No questions generated yet.</p></div>}
                      </div>
                  )}
-
-                 {interviewSubTab === 'mock' && (
-                     <div className="h-full">
-                         <MockInterview 
-                            role={application.role}
-                            company={application.company}
-                            jobDescription={application.jobDescription}
-                            resumeText={application.resumeText}
-                            onBack={() => setInterviewSubTab('menu')}
-                         />
-                     </div>
-                 )}
+                 {interviewSubTab === 'mock' && <div className="h-full"><MockInterview role={application.role} company={application.company} jobDescription={application.jobDescription} resumeText={application.resumeText} onBack={() => setInterviewSubTab('menu')} /></div>}
              </div>
           )}
 
-          {/* NOTES TAB */}
+          {/* Notes Tab */}
           {activeTab === 'notes' && (
              <div className="max-w-4xl mx-auto animate-in fade-in pb-10">
                 <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
-                  <div>
-                    <h2 className="text-2xl font-bold text-slate-900">Remarks & Notes</h2>
-                    <p className="text-slate-500 mt-1">Keep track of interview details, company research, and referrals.</p>
-                  </div>
-                  {!isAddingNote && (
-                    <button 
-                      onClick={() => setIsAddingNote(true)}
-                      className="flex items-center gap-2 bg-[#006A71] hover:bg-[#004D53] text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-teal-100 transition-all"
-                    >
-                      <Plus className="w-4 h-4" /> Add New Note
-                    </button>
-                  )}
+                  <div><h2 className="text-2xl font-bold text-slate-900">Remarks & Notes</h2><p className="text-slate-500 mt-1">Keep track of interview details and referrals.</p></div>
+                  {!isAddingNote && <button onClick={() => setIsAddingNote(true)} className="flex items-center gap-2 bg-[#006A71] hover:bg-[#004D53] text-white px-5 py-2.5 rounded-xl font-bold shadow-lg transition-all"><Plus className="w-4 h-4" /> New Note</button>}
                 </div>
-
                 {isAddingNote && (
                    <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-md mb-8 animate-in slide-in-from-top-4">
-                      <div className="flex justify-between items-start mb-4">
-                         <h3 className="text-lg font-bold text-slate-800">Create New Note</h3>
-                         <button onClick={() => setIsAddingNote(false)} className="text-slate-400 hover:text-slate-600">
-                           <X className="w-5 h-5" />
-                         </button>
-                      </div>
-                      <input 
-                        className="w-full p-3 mb-4 text-lg font-semibold border-b border-slate-200 outline-none focus:border-[#006A71] placeholder:text-slate-300"
-                        placeholder="Note Title (e.g. Interview Feedback, Referral Code)"
-                        value={newNoteTitle}
-                        onChange={(e) => setNewNoteTitle(e.target.value)}
-                        autoFocus
-                      />
-                      <textarea 
-                        className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:border-[#006A71] outline-none min-h-[150px] resize-none mb-4"
-                        placeholder="Write your details here..."
-                        value={newNoteContent}
-                        onChange={(e) => setNewNoteContent(e.target.value)}
-                      />
-                      <div className="flex justify-end gap-3">
-                         <button 
-                           onClick={() => setIsAddingNote(false)}
-                           className="px-4 py-2 text-slate-500 font-semibold hover:bg-slate-50 rounded-lg transition-colors"
-                         >
-                           Cancel
-                         </button>
-                         <button 
-                           onClick={handleAddNote}
-                           disabled={!newNoteTitle.trim() && !newNoteContent.trim()}
-                           className={`px-6 py-2 bg-[#006A71] text-white rounded-lg font-bold shadow-sm transition-all ${
-                             (!newNoteTitle.trim() && !newNoteContent.trim()) ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#004D53]'
-                           }`}
-                         >
-                           Save Note
-                         </button>
-                      </div>
+                      <div className="flex justify-between items-start mb-4"><h3 className="text-lg font-bold text-slate-800">Create New Note</h3><button onClick={() => setIsAddingNote(false)} className="text-slate-400 hover:text-slate-600"><X className="w-5 h-5" /></button></div>
+                      <input className="w-full p-3 mb-4 text-lg font-semibold border-b border-slate-100 outline-none focus:border-[#006A71]" placeholder="Note Title..." value={newNoteTitle} onChange={(e) => setNewNoteTitle(e.target.value)} autoFocus />
+                      <textarea className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:border-[#006A71] outline-none min-h-[150px] resize-none mb-4" placeholder="Write your details here..." value={newNoteContent} onChange={(e) => setNewNoteContent(e.target.value)} />
+                      <div className="flex justify-end gap-3"><button onClick={() => setIsAddingNote(false)} className="px-4 py-2 text-slate-500 font-semibold hover:bg-slate-50 rounded-lg">Cancel</button><button onClick={handleAddNote} disabled={!newNoteTitle.trim() && !newNoteContent.trim()} className={`px-6 py-2 bg-[#006A71] text-white rounded-lg font-bold ${(!newNoteTitle.trim() && !newNoteContent.trim()) ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#004D53]'}`}>Save Note</button></div>
                    </div>
                 )}
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                   {/* Fallback for legacy 'remarks' field if it exists and notes are empty */}
-                   {(!application.notes || application.notes.length === 0) && application.remarks && (
-                      <div className="bg-amber-50 rounded-2xl p-6 border border-amber-100 relative group">
-                        <div className="flex justify-between items-start mb-3">
-                           <h4 className="font-bold text-slate-800">General Remarks</h4>
-                           <span className="text-[10px] uppercase tracking-wider font-bold text-amber-600 bg-amber-100 px-2 py-1 rounded">Legacy</span>
-                        </div>
-                        <p className="text-slate-600 text-sm whitespace-pre-wrap leading-relaxed">{application.remarks}</p>
-                      </div>
-                   )}
-
-                   {application.notes && application.notes.length > 0 ? (
-                      application.notes.map((note) => (
-                        <div key={note.id} className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md transition-all group relative">
-                           <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button 
-                                onClick={() => handleDeleteNote(note.id)}
-                                className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                                title="Delete Note"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                           </div>
-                           <div className="mb-3 pr-8">
-                              <h4 className="font-bold text-lg text-slate-800 leading-tight">{note.title}</h4>
-                              <span className="text-xs text-slate-400 font-medium">{note.date}</span>
-                           </div>
-                           <p className="text-slate-600 text-sm whitespace-pre-wrap leading-relaxed">
-                              {note.content}
-                           </p>
-                        </div>
-                      ))
-                   ) : (
-                      !application.remarks && !isAddingNote && (
-                        <div className="col-span-full py-12 flex flex-col items-center text-center border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
-                           <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-100 mb-3">
-                              <StickyNote className="w-6 h-6 text-slate-300" />
-                           </div>
-                           <p className="text-slate-500 font-medium">No notes added yet.</p>
-                           <button onClick={() => setIsAddingNote(true)} className="text-[#006A71] font-bold text-sm mt-1 hover:underline">Create your first note</button>
-                        </div>
-                      )
-                   )}
+                   {application.notes && application.notes.length > 0 ? (application.notes.map((note) => (<div key={note.id} className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm group relative"><div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity"><button onClick={() => handleDeleteNote(note.id)} className="p-1.5 text-slate-400 hover:text-red-500"><Trash2 className="w-4 h-4" /></button></div><div className="mb-3 pr-8"><h4 className="font-bold text-lg text-slate-800">{note.title}</h4><span className="text-[10px] text-slate-400 font-bold uppercase">{note.date}</span></div><p className="text-slate-600 text-sm whitespace-pre-wrap">{note.content}</p></div>))) : (!isAddingNote && (<div className="col-span-full py-12 flex flex-col items-center border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50/50"><StickyNote className="w-8 h-8 text-slate-300 mb-3" /><p className="text-slate-500 font-medium">No notes added yet.</p></div>))}
                 </div>
              </div>
           )}

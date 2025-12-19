@@ -79,7 +79,7 @@ export const createChatSession = (): Chat => {
   }
   
   return ai.chats.create({
-    model: 'gemini-2.5-flash',
+    model: 'gemini-3-flash-preview',
     config: {
       systemInstruction: `You are JobHuntIQ's AI Career Companion. 
       Your goals:
@@ -91,6 +91,82 @@ export const createChatSession = (): Chat => {
       tools: [{ googleSearch: {} }],
     }
   });
+};
+
+export const extractJobDataFromText = async (rawText: string): Promise<any> => {
+  if (!apiKey) throw new Error("API Key is missing.");
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: `Extract job application details from the following raw text:
+      
+      RAW TEXT:
+      ${rawText.slice(0, 25000)}
+      
+      Extract as many as possible into this JSON structure:
+      {
+        "role": "Full job title",
+        "company": "Company name",
+        "location": "Job location",
+        "ctc": "Salary or CTC if specified",
+        "jobDescription": "VERBATIM job description"
+      }
+      
+      CRITICAL INSTRUCTION for "jobDescription": 
+      - You MUST provide the FULL, VERBATIM job description exactly as it appears in the text.
+      - ABSOLUTELY NO SUMMARIZATION, NO REPHRASING, and NO SHORTENING.
+      - Copy every single bullet point, requirement, and responsibility word-for-word.
+      - If the user provided a long text, extract all of it into this field without skipping.
+      
+      Only return the raw JSON object. If a field is not found, leave it as an empty string.`,
+      config: {
+        responseMimeType: "application/json",
+      },
+    });
+
+    const text = response.text || "{}";
+    return JSON.parse(text);
+  } catch (error) {
+    console.error("Extract Job Data Error:", error);
+    throw new Error("Failed to extract data from the provided text.");
+  }
+};
+
+export const fetchJobDetails = async (url: string): Promise<any> => {
+  if (!apiKey) throw new Error("API Key is missing.");
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: `Visit this URL and extract job application details: ${url}
+      
+      Extract as many as possible into this JSON structure:
+      {
+        "role": "Full job title",
+        "company": "Company name",
+        "location": "Job location",
+        "ctc": "Salary or CTC if specified",
+        "jobDescription": "Full detailed description"
+      }
+      
+      Only return the raw JSON object. If a field is not found, leave it as an empty string.`,
+      config: {
+        tools: [{ googleSearch: {} }],
+      },
+    });
+
+    const text = response.text || "{}";
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      return parsed;
+    }
+    return {};
+  } catch (error) {
+    console.error("Fetch Job Details Error:", error);
+    throw new Error("Failed to fetch data from the provided link.");
+  }
 };
 
 export const analyzeJobApplication = async (
@@ -155,7 +231,7 @@ export const analyzeJobApplication = async (
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3-flash-preview",
       contents: prompt,
       config: {
         systemInstruction: systemInstruction,
