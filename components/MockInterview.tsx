@@ -17,7 +17,7 @@ interface MockInterviewProps {
 interface Message {
   id: string;
   role: 'ai' | 'user';
-  text: string;
+  text: string;ci
   timestamp: number;
 }
 
